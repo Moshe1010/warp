@@ -951,6 +951,7 @@ pub const DOGFOOD_FLAGS: &[FeatureFlag] = &[
     FeatureFlag::GPTConfigurableContextWindow,
     FeatureFlag::RestorePromptOnInlineModelSelectorSearch,
     FeatureFlag::WarpControlCli,
+    FeatureFlag::ContextWindowUsageBreakdown,
 ];
 
 /// Features enabled for feature preview build users (e.g.: Friends of Warp).
