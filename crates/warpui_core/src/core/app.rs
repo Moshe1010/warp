@@ -4346,6 +4346,18 @@ impl AppContext {
             .contains(view_id)
     }
 
+    /// Where `view_id` lives *now*. Task callbacks capture a `window_id` when they are
+    /// spawned, but a view outlives the window it was spawned in: dragging a tab into a
+    /// new window re-parents the view and updates `view_to_window` without touching any
+    /// already-spawned task. Falls back to the captured id when the view has no mapping
+    /// (it is being torn down), which preserves the previous behaviour for that case.
+    fn current_window_for_view(&self, view_id: EntityId, spawned_in: WindowId) -> WindowId {
+        self.view_to_window
+            .get(&view_id)
+            .copied()
+            .unwrap_or(spawned_in)
+    }
+
     fn relay_task_output(&mut self, task_id: usize, output: Box<dyn Any>) -> Result<()> {
         self.pending_flushes += 1;
         let Some(task_callback) = self.task_callbacks.remove(&task_id) else {
@@ -4392,6 +4404,12 @@ impl AppContext {
                 view_id,
                 callback,
             } => {
+                // A view can move to a different window after the task was spawned -
+                // dragging a tab out into its own window does exactly that - which leaves
+                // the `window_id` captured at spawn time pointing at the wrong window.
+                // `view_to_window` is the authoritative lookup; `ViewHandle::window_id()`
+                // and `subscribe_to_view` already resolve through it for this reason.
+                let window_id = self.current_window_for_view(view_id, window_id);
                 if let Some(mut view) = self
                     .windows
                     .get_mut(&window_id)
@@ -4412,6 +4430,11 @@ impl AppContext {
                 mut on_item,
                 on_done,
             } => {
+                // See the note in `ViewFromFuture`: the spawn-time `window_id` goes stale
+                // when the view is moved to another window. Streams are long-lived, so
+                // this one matters more - a moved terminal pane otherwise stops receiving
+                // its own wakeups and only repaints when some other event forces a draw.
+                let window_id = self.current_window_for_view(view_id, window_id);
                 if let Some(mut view) = self
                     .windows
                     .get_mut(&window_id)
@@ -4466,6 +4489,7 @@ impl AppContext {
                 on_done: callback,
                 ..
             } => {
+                let window_id = self.current_window_for_view(view_id, window_id);
                 if let Some(mut view) = self
                     .windows
                     .get_mut(&window_id)
