@@ -213,6 +213,7 @@ tracing.workspace = true
 tracing-futures = { workspace = true, features = ["futures-03"] }
 ui_components.workspace = true
 unicase = "2.7.0"
+unicode-bidi.workspace = true
 unicode-general-category.workspace = true
 unicode-width.workspace = true
 unindent = "0.1.7"

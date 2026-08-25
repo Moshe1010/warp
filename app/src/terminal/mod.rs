@@ -26,6 +26,7 @@ mod audible_bell;
 pub use audible_bell::AudibleBell;
 pub mod available_shells;
 
+pub(crate) mod bidi;
 mod block_filter;
 pub mod block_list_element;
 pub mod block_list_viewport;
